@@ -19,30 +19,31 @@ HashSet<System.DayOfWeek> weekends = new[] { DayOfWeek.Saturday, DayOfWeek.Sunda
 app.MapGet("/SwedishWorkingDays", (int starYear, int endYear) =>
 {
     var result = new List<MonthInfo>();
-    for (int y = starYear; y<=endYear; y++)
-    {
-        var holiDays = new PublicHoliday.SwedenPublicHoliday().PublicHolidays(y).Select(r => DateOnly.FromDateTime(r.Date)).ToHashSet();
-        for (int m = 1; m<=12; m++)
+    if (endYear>=starYear)
+        for (int y = starYear; y<=endYear; y++)
         {
+            var holiDays = new PublicHoliday.SwedenPublicHoliday().PublicHolidays(y).Select(r => DateOnly.FromDateTime(r.Date)).ToHashSet();
+            for (int m = 1; m<=12; m++)
+            {
 
-            var days = new DateOnly(y, m, 1).AddMonths(1).AddDays(-1).Day;
-            var workingDays = 0;
-            for (int i = 1; i <= days; i++)
-            {
-                var d = new DateOnly(y, m, i);
-                if (!weekends.Contains(d.DayOfWeek) && !holiDays.Contains(d))
-                    workingDays++;
+                var days = new DateOnly(y, m, 1).AddMonths(1).AddDays(-1).Day;
+                var workingDays = 0;
+                for (int i = 1; i <= days; i++)
+                {
+                    var d = new DateOnly(y, m, i);
+                    if (!weekends.Contains(d.DayOfWeek) && !holiDays.Contains(d))
+                        workingDays++;
+                }
+                //Special case when 6/6 occurs on a weekend
+                if (m==6 && y>=2005)
+                {
+                    var d = new DateOnly(y, 6, 6);
+                    if (weekends.Contains(d.DayOfWeek))
+                        workingDays--;
+                }
+                result.Add(new MonthInfo(y, m, workingDays));
             }
-            //Special case when 6/6 occurs on a weekend
-            if (m==6 && y>=2005)
-            {
-                var d = new DateOnly(y, 6, 6);
-                if (weekends.Contains(d.DayOfWeek))
-                    workingDays--;
-            }
-            result.Add(new MonthInfo(y, m, workingDays));
         }
-    }
     return result;
 })
 .WithName("GetSwedishWorkingDays")
